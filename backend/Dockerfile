@@ -35,7 +35,7 @@ RUN tlmgr update --self \
 WORKDIR /app
 
 # Install Python dependencies
-RUN pip install --no-cache-dir "rendercv[pydantic]" fastapi uvicorn
+RUN pip install --no-cache-dir "rendercv[full]" fastapi uvicorn
 
 # Copy all backend code into the container
 COPY . /app
