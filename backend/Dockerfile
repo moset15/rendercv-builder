@@ -35,7 +35,7 @@ RUN tlmgr update --self \
 WORKDIR /app
 
 # Install Python dependencies
-RUN pip install --no-cache-dir "rendercv[full]" fastapi uvicorn
+RUN pip install --no-cache-dir "rendercv[full]" fastapi uvicorn google-genai python-multipart
 
 # Copy all backend code into the container
 COPY . /app

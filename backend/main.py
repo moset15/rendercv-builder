@@ -83,3 +83,50 @@ async def generate_resume(request: ResumeRequest, background_tasks: BackgroundTa
         import traceback
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=500, content={"detail": traceback.format_exc()})
+
+from fastapi import UploadFile, File
+@app.post("/api/parse")
+async def parse_resume(file: UploadFile = File(...)):
+    if not os.environ.get("GEMINI_API_KEY"):
+        raise HTTPException(status_code=400, detail="GEMINI_API_KEY environment variable is missing on the server.")
+    
+    temp_dir = tempfile.mkdtemp()
+    file_path = os.path.join(temp_dir, file.filename)
+    
+    try:
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+            
+        from google import genai
+        from google.genai import types
+        
+        client = genai.Client()
+        uploaded_file = client.files.upload(file=file_path)
+        
+        prompt = """
+        Extract the resume into this EXACT JSON structure. Only output valid JSON without markdown wrapping.
+        {
+          "personal": {"name": "", "email": "", "phone": "", "location": ""},
+          "socials": [{"network": "LinkedIn", "username": ""}],
+          "education": [{"institution": "", "area": "", "degree": "", "start_date": "YYYY-MM", "end_date": "YYYY-MM", "highlights": "Bullet points separated by newlines"}],
+          "experience": [{"company": "", "position": "", "location": "", "start_date": "YYYY-MM", "end_date": "YYYY-MM", "highlights": "Bullet points separated by newlines"}],
+          "athletics": [{"name": "", "details": ""}]
+        }
+        """
+        
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[uploaded_file, prompt],
+            config=types.GenerateContentConfig(response_mime_type="application/json")
+        )
+        
+        import json
+        data = json.loads(response.text)
+        cleanup_dir(temp_dir)
+        return data
+        
+    except Exception as e:
+        cleanup_dir(temp_dir)
+        import traceback
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=500, content={"detail": traceback.format_exc()})
