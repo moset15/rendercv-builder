@@ -138,7 +138,8 @@ export default function Home() {
         }
       };
 
-      const res = await fetch("http://localhost:8000/api/generate", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
