@@ -138,7 +138,9 @@ export default function Home() {
         }
       };
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const isProd = process.env.NODE_ENV === "production";
+      const fallbackUrl = isProd ? "https://rendercv-backend.onrender.com" : "http://localhost:8000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || fallbackUrl;
       const res = await fetch(`${apiUrl}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
