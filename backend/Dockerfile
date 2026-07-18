@@ -30,7 +30,7 @@ RUN tlmgr update --self \
     titlesec \
     enumitem \
     iftex \
-    tabularx
+    tools
 
 WORKDIR /app
 
