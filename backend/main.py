@@ -35,15 +35,16 @@ def debug_env():
 
 @app.post("/api/generate")
 async def generate_resume(request: ResumeRequest, background_tasks: BackgroundTasks):
-    import yaml
-    
-    temp_dir = tempfile.mkdtemp()
-    yaml_path = os.path.join(temp_dir, "resume.yaml")
-    
-    with open(yaml_path, "w") as f:
-        yaml.dump({"cv": request.cv}, f, default_flow_style=False)
-        
+    temp_dir = None
     try:
+        import json
+        
+        temp_dir = tempfile.mkdtemp()
+        yaml_path = os.path.join(temp_dir, "resume.yaml")
+        
+        with open(yaml_path, "w") as f:
+            json.dump({"cv": request.cv}, f)
+            
         subprocess.run(
             ["python3", "-m", "rendercv", "render", yaml_path],
             cwd=temp_dir,
@@ -73,12 +74,12 @@ async def generate_resume(request: ResumeRequest, background_tasks: BackgroundTa
         )
         
     except subprocess.CalledProcessError as e:
-        cleanup_dir(temp_dir)
+        if temp_dir: cleanup_dir(temp_dir)
         error_msg = e.stderr if e.stderr else e.stdout
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=400, content={"detail": f"RenderCV Compilation Error:\n{error_msg}"})
     except Exception as e:
-        cleanup_dir(temp_dir)
+        if temp_dir: cleanup_dir(temp_dir)
         import traceback
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=500, content={"detail": traceback.format_exc()})
