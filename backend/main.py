@@ -60,7 +60,8 @@ async def generate_resume(request: ResumeRequest, background_tasks: BackgroundTa
         
     except subprocess.CalledProcessError as e:
         cleanup_dir(temp_dir)
-        raise HTTPException(status_code=400, detail=f"RenderCV failed: {e.stderr}")
+        error_msg = e.stderr if e.stderr else e.stdout
+        raise HTTPException(status_code=400, detail=f"RenderCV Compilation Error:\n{error_msg}")
     except Exception as e:
         cleanup_dir(temp_dir)
         raise HTTPException(status_code=500, detail=str(e))
