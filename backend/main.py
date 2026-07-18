@@ -23,6 +23,10 @@ def cleanup_dir(path: str):
     if os.path.exists(path):
         shutil.rmtree(path)
 
+@app.get("/")
+def health_check():
+    return {"status": "healthy"}
+
 @app.post("/api/generate")
 async def generate_resume(request: ResumeRequest, background_tasks: BackgroundTasks):
     import yaml
