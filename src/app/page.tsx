@@ -1,65 +1,107 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Loader2, FileDown } from "lucide-react";
 
 export default function Home() {
+  const { register, handleSubmit } = useForm({
+    defaultValues: {
+      name: "John Doe",
+      email: "john@example.com",
+      phone: "+1234567890",
+      location: "Nairobi, Kenya"
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async (data: any) => {
+    setLoading(true);
+    setError(null);
+    setPdfUrl(null);
+    try {
+      const payload = {
+        cv: {
+          name: data.name,
+          location: data.location,
+          email: data.email,
+          phone: data.phone,
+          sections: {
+            "Athletic Achievements": [
+              "Kitaka 10s Champion - 2024",
+              "Kenya Cup Semi-Finalist"
+            ]
+          }
+        }
+      };
+
+      const res = await fetch("http://localhost:8000/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText);
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="min-h-screen bg-neutral-950 text-neutral-100 p-8 flex gap-8">
+      <div className="w-1/2 max-w-xl h-[calc(100vh-4rem)] overflow-y-auto pr-4">
+        <h1 className="text-3xl font-bold mb-2">RenderCV Builder</h1>
+        <p className="text-neutral-400 mb-8">Generate a beautiful, LaTeX-powered CV directly in your browser.</p>
+        
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-neutral-900 p-6 rounded-xl border border-neutral-800">
+          <div>
+            <label className="block text-sm mb-1 text-neutral-400">Full Name</label>
+            <input {...register("name")} className="w-full bg-neutral-950 border border-neutral-800 rounded-md p-2 text-white" />
+          </div>
+          <div>
+            <label className="block text-sm mb-1 text-neutral-400">Email</label>
+            <input {...register("email")} className="w-full bg-neutral-950 border border-neutral-800 rounded-md p-2 text-white" />
+          </div>
+          <div>
+            <label className="block text-sm mb-1 text-neutral-400">Location</label>
+            <input {...register("location")} className="w-full bg-neutral-950 border border-neutral-800 rounded-md p-2 text-white" />
+          </div>
+          <div>
+            <label className="block text-sm mb-1 text-neutral-400">Phone</label>
+            <input {...register("phone")} className="w-full bg-neutral-950 border border-neutral-800 rounded-md p-2 text-white" />
+          </div>
+          
+          <button type="submit" disabled={loading} className="w-full bg-white text-black font-bold py-3 rounded-md mt-6 flex justify-center items-center gap-2 hover:bg-neutral-200 disabled:opacity-50 transition-all">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
+            {loading ? "Generating PDF (LaTeX)..." : "Generate CV"}
+          </button>
+          
+          {error && <div className="text-red-500 mt-4 text-sm bg-red-500/10 p-4 rounded-md border border-red-500/20 whitespace-pre-wrap font-mono">{error}</div>}
+        </form>
+      </div>
+      
+      <div className="w-1/2 bg-neutral-900 rounded-xl border border-neutral-800 flex items-center justify-center p-2 h-[calc(100vh-4rem)]">
+        {pdfUrl ? (
+          <iframe src={pdfUrl} className="w-full h-full rounded-lg bg-white" />
+        ) : (
+          <div className="text-neutral-500 flex flex-col items-center">
+            <FileDown className="w-12 h-12 mb-4 opacity-50" />
+            <p>Fill out the form and click Generate to preview your CV here.</p>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
