@@ -60,12 +60,16 @@ async def generate_resume(request: ResumeRequest, background_tasks: BackgroundTa
             
         pdf_path = pdf_files[0]
         
-        background_tasks.add_task(cleanup_dir, temp_dir)
+        from fastapi.responses import Response
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+            
+        cleanup_dir(temp_dir)
         
-        return FileResponse(
-            path=pdf_path,
-            filename="resume.pdf",
-            media_type="application/pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "inline; filename=resume.pdf"}
         )
         
     except subprocess.CalledProcessError as e:
