@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { Loader2, FileDown, Plus, Trash2, ChevronDown, ChevronUp, Palette } from "lucide-react";
+import { Loader2, FileDown, Plus, Trash2, ChevronDown, ChevronUp, Palette, UploadCloud } from "lucide-react";
 
 // The default data structure for the form
 const defaultValues = {
@@ -79,8 +79,10 @@ export default function Home() {
   const { fields: socialFields, append: appendSocial, remove: removeSocial } = useFieldArray({ control, name: "socials" });
 
   const [loading, setLoading] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load from local storage on mount
   useEffect(() => {
@@ -168,13 +170,57 @@ export default function Home() {
     }
   };
 
+  const handleFileUpload = async (e: any) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setParsing(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const isProd = process.env.NODE_ENV === "production";
+      const fallbackUrl = isProd ? "https://rendercv-backend.onrender.com" : "http://localhost:8000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || fallbackUrl;
+      
+      const res = await fetch(`${apiUrl}/api/parse`, {
+        method: "POST",
+        body: formData
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to parse document.");
+      }
+      
+      const data = await res.json();
+      reset({ ...defaultValues, ...data, theme: watch("theme") });
+      alert("Resume successfully imported and parsed!");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setParsing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 p-8 flex flex-col lg:flex-row gap-8">
       {/* Editor Pane */}
       <div className="w-full lg:w-1/2 flex flex-col h-[calc(100vh-4rem)]">
-        <div className="mb-6">
-          <h1 className="text-3xl font-black tracking-tight mb-2">RenderCV Builder</h1>
-          <p className="text-neutral-400">Production-ready LaTeX portfolio generator.</p>
+        <div className="mb-6 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight mb-2">RenderCV Builder</h1>
+            <p className="text-neutral-400">Production-ready LaTeX portfolio generator.</p>
+          </div>
+          <div>
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,.doc,.docx" className="hidden" />
+            <button onClick={() => fileInputRef.current?.click()} disabled={parsing} className="bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50">
+              {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+              {parsing ? "Parsing AI..." : "Import PDF"}
+            </button>
+          </div>
         </div>
         
         <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto pr-2 space-y-4 pb-20 custom-scrollbar">
