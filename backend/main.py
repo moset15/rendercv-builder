@@ -71,7 +71,10 @@ async def generate_resume(request: ResumeRequest, background_tasks: BackgroundTa
     except subprocess.CalledProcessError as e:
         cleanup_dir(temp_dir)
         error_msg = e.stderr if e.stderr else e.stdout
-        raise HTTPException(status_code=400, detail=f"RenderCV Compilation Error:\n{error_msg}")
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=400, content={"detail": f"RenderCV Compilation Error:\n{error_msg}"})
     except Exception as e:
         cleanup_dir(temp_dir)
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=500, content={"detail": traceback.format_exc()})
