@@ -12,8 +12,12 @@ const defaultValues = {
     email: "john@example.com",
     phone: "+1234567890",
     location: "Nairobi, Kenya",
-    website: "https://johndoe.com"
+    website: "johndoe.com"
   },
+  socials: [
+    { network: "LinkedIn", username: "johndoe" },
+    { network: "GitHub", username: "johndoe" }
+  ],
   education: [
     {
       institution: "University of Nairobi",
@@ -72,6 +76,7 @@ export default function Home() {
   const { fields: eduFields, append: appendEdu, remove: removeEdu } = useFieldArray({ control, name: "education" });
   const { fields: expFields, append: appendExp, remove: removeExp } = useFieldArray({ control, name: "experience" });
   const { fields: athFields, append: appendAth, remove: removeAth } = useFieldArray({ control, name: "athletics" });
+  const { fields: socialFields, append: appendSocial, remove: removeSocial } = useFieldArray({ control, name: "socials" });
 
   const [loading, setLoading] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -109,7 +114,8 @@ export default function Home() {
           location: data.personal.location,
           email: data.personal.email,
           phone: data.personal.phone,
-          website: data.personal.website,
+          website: data.personal.website ? (data.personal.website.startsWith("http") ? data.personal.website : `https://${data.personal.website}`) : undefined,
+          social_networks: data.socials?.length > 0 ? data.socials : undefined,
           sections: {
             "Education": data.education.map((edu: any) => ({
               institution: edu.institution,
@@ -128,7 +134,7 @@ export default function Home() {
               highlights: exp.highlights.split("\n").filter((h: string) => h.trim() !== "")
             })),
             "Athletic Achievements": data.athletics.map((ath: any) => ({
-              name: ath.name,
+              label: ath.name,
               details: ath.details
             }))
           }
@@ -205,6 +211,29 @@ export default function Home() {
                 <input {...register("personal.website")} className="w-full bg-neutral-950 border border-neutral-800 rounded-md p-2 text-white outline-none focus:border-neutral-500" />
               </div>
             </div>
+          </Accordion>
+
+          <Accordion title="Social Links" icon={<div className="w-5 h-5 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-xs">SO</div>}>
+             {socialFields.map((field, index) => (
+              <div key={field.id} className="relative p-4 border border-neutral-800 rounded-lg bg-neutral-950 mb-4">
+                <button type="button" onClick={() => removeSocial(index)} className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-500/10 rounded">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <label className="block text-xs mb-1 text-neutral-500">Network (e.g. LinkedIn, Instagram, YouTube)</label>
+                    <input {...register(`socials.${index}.network`)} className="w-full bg-neutral-900 border border-neutral-800 rounded p-2 text-sm text-white outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs mb-1 text-neutral-500">Username</label>
+                    <input {...register(`socials.${index}.username`)} className="w-full bg-neutral-900 border border-neutral-800 rounded p-2 text-sm text-white outline-none" />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <button type="button" onClick={() => appendSocial({ network: "", username: "" })} className="w-full py-2 border border-dashed border-neutral-700 rounded-lg text-neutral-400 hover:text-white hover:border-neutral-500 flex items-center justify-center gap-2 text-sm transition-colors">
+              <Plus className="w-4 h-4" /> Add Social Link
+            </button>
           </Accordion>
 
           <Accordion title="Experience" icon={<div className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs">EX</div>}>
