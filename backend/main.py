@@ -27,6 +27,12 @@ def cleanup_dir(path: str):
 def health_check():
     return {"status": "healthy"}
 
+@app.get("/api/debug")
+def debug_env():
+    import subprocess
+    result = subprocess.run(["pip", "list"], capture_output=True, text=True)
+    return {"pip_list": result.stdout}
+
 @app.post("/api/generate")
 async def generate_resume(request: ResumeRequest, background_tasks: BackgroundTasks):
     import yaml
